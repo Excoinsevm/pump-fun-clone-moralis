@@ -2,23 +2,20 @@ import React, { useState, useEffect } from 'react';
 import '../App.css'; 
 import { useNavigate } from 'react-router-dom'; 
 const { ethers } = require('ethers');
-const {abi} = require("./abi")
+const { abi } = require('./abi');
 
 const App = () => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [walletAddress, setWalletAddress] = useState(''); // New state for wallet address
   const navigate = useNavigate(); 
 
   useEffect(() => {
     const fetchMemeTokens = async () => {
       try {
-      
-        const provider = new ethers.JsonRpcProvider(process.env.REACT_APP_RPC_URL)
-
-        console.log(provider)
+        const provider = new ethers.JsonRpcProvider(process.env.REACT_APP_RPC_URL);
         const contract = new ethers.Contract(process.env.REACT_APP_CONTRACT_ADDRESS, abi, provider);
-
         const memeTokens = await contract.getAllMemeTokens();
 
         setCards(
@@ -27,7 +24,7 @@ const App = () => {
             symbol: token.symbol,
             description: token.description,
             tokenImageUrl: token.tokenImageUrl,
-            fundingRaised: ethers.formatUnits(token.fundingRaised, 'ether'), // Format the fundingRaised from Wei to Ether
+            fundingRaised: ethers.formatUnits(token.fundingRaised, 'ether'),
             tokenAddress: token.tokenAddress,
             creatorAddress: token.creatorAddress,
           }))
@@ -47,7 +44,20 @@ const App = () => {
   };
 
   const navigateToTokenDetail = (card) => {
-    navigate(`/token-detail/${card.tokenAddress}`, { state: { card } }); // Use tokenAddress for URL
+    navigate(`/token-detail/${card.tokenAddress}`, { state: { card } }); 
+  };
+
+  const connectWallet = async () => {
+    try {
+      const provider = new ethers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const address = await signer.getAddress();
+      setWalletAddress(address); // Save the wallet address to state
+      console.log('Wallet connected:', address);
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+    }
   };
 
   return (
@@ -55,13 +65,14 @@ const App = () => {
       <nav className="navbar">
         <a href="#" className="nav-link">[moralis]</a>
         <a href="#" className="nav-link">[docs]</a>
-        <button className="nav-button">[connect wallet]</button>
+        <button className="nav-button" onClick={connectWallet}>
+          {walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : '[connect wallet]'}
+        </button> {/* Button shows wallet address if connected */}
       </nav>
       <div className="card-container">
         <h3 className="start-new-coin" onClick={() => navigate('/token-create')}>[start a new coin]</h3>
         <img src="https://pump.fun/_next/image?url=%2Fking-of-the-hill.png&w=256&q=75" alt="Start a new coin" className="start-new-image"/>
         
-      
         {cards.length > 0 && (
           <div className="card main-card" onClick={() => navigateToTokenDetail(cards[0])}>
             <div className="card-content">
@@ -92,7 +103,6 @@ const App = () => {
           <p>Loading...</p>
         ) : (
           <div className="card-list">
-    
             {cards.slice(1).map((card, index) => (
               <div key={index} className="card" onClick={() => navigateToTokenDetail(card)}>
                 <div className="card-content">
