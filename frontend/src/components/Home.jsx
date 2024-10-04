@@ -8,7 +8,7 @@ const App = () => {
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [walletAddress, setWalletAddress] = useState(''); // New state for wallet address
+  const [walletAddress, setWalletAddress] = useState('');
   const navigate = useNavigate(); 
 
   useEffect(() => {
@@ -49,11 +49,16 @@ const App = () => {
 
   const connectWallet = async () => {
     try {
+      if (!window.ethereum) {
+        console.error('Ethereum wallet not found. Please install MetaMask or another wallet.');
+        return;
+      }
+      
       const provider = new ethers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
       const address = await signer.getAddress();
-      setWalletAddress(address); // Save the wallet address to state
+      setWalletAddress(address);
       console.log('Wallet connected:', address);
     } catch (error) {
       console.error('Error connecting wallet:', error);
@@ -67,7 +72,7 @@ const App = () => {
         <a href="#" className="nav-link">[docs]</a>
         <button className="nav-button" onClick={connectWallet}>
           {walletAddress ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : '[connect wallet]'}
-        </button> {/* Button shows wallet address if connected */}
+        </button>
       </nav>
       <div className="card-container">
         <h3 className="start-new-coin" onClick={() => navigate('/token-create')}>[start a new coin]</h3>
